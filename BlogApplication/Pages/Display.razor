@@ -1,0 +1,125 @@
+﻿@page "/display"
+@using MudBlazor
+@inject SupabaseService SupabaseService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider Auth
+@inject IJSRuntime JSRuntime
+@using BlogApplication.Models
+@using Supabase.Postgrest
+@using Supabase.Gotrue
+@inject ISnackbar Snackbar
+@using BlogApplication.Services
+
+<h3>View Blog Posts</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (blogPosts != null && blogPosts.Any())
+{
+    <div class="blog-posts">
+        @foreach (var blog in blogPosts)
+        {
+            <div class="blog-post">
+                <h4>@blog.title</h4>
+                <p><strong>Summary:</strong> @blog.summary</p>
+                <div class="content">
+                    @((MarkupString)blog.content) <!-- Use MarkupString to render HTML content -->
+                </div>
+                <hr />
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>No blog posts available.</p>
+}
+
+<style>
+    .blog-posts {
+    margin-top: 20px;
+    }
+
+    .blog-post {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    }
+
+    h4 {
+    color: #333;
+    }
+
+    .content {
+    color: #555;
+    }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private string email;
+    private List<blog> blogPosts = new List<blog>(); // Use the 'blog' class here
+
+    // On page load, retrieve the blog posts from Supabase
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await Auth.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity != null && user.Identity.IsAuthenticated)
+            {
+                email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+                await LoadBlogAsync(email);
+            }
+            else
+            {
+                email = null;
+            }
+
+            if (email == null)
+            {
+                Console.WriteLine("User not logged in. Redirecting...");
+                NavigationManager.NavigateTo("/login"); // Redirect if not authenticated
+                return;
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    private async Task LoadBlogAsync(string uname)
+    {
+        try
+        {
+            isLoading = true;
+
+            // Fetch cities from SupabaseService
+            blogPosts = await SupabaseService.GetBlogAsync(uname);
+
+            // Log a message if no data is retrieved
+            if (!blogPosts.Any())
+                Snackbar.Add("No favorite cities found. Add some cities!", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("No Notification", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+}

@@ -1,0 +1,232 @@
+﻿@page "/blog"
+@inject SupabaseService SupabaseService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using BlogApplication.Models
+@using BlogApplication.Services
+@inject AuthenticationStateProvider Auth
+@inject HttpClient Http
+@attribute [CustomAuthorize("user")]
+@implements IDisposable
+<h3>Create a New Blog Post</h3>
+
+<EditForm Model="@newBlogPost" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="title">Title</label>
+        <InputText id="title" class="form-control" @bind-Value="newBlogPost.Title" />
+    </div>
+
+    <div class="form-group">
+        <label for="summary">Summary</label>
+        <InputText id="summary" class="form-control" @bind-Value="newBlogPost.Summary" />
+    </div>
+
+    <div class="form-group">
+        <label for="content">Content</label>
+        <textarea id="mytextarea" class="form-control"></textarea>
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Create Blog Post</button>
+    </div>
+</EditForm>
+
+<style>
+    /* Global Styles */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Header styles */
+    h3 {
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    /* Form Styles */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    label {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    input,
+    textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1em;
+        color: #333;
+        background-color: #fff;
+        transition: border 0.3s ease-in-out;
+    }
+
+        input:focus,
+        textarea:focus {
+            border: 1px solid #61dafb;
+            outline: none;
+        }
+
+    button {
+        background-color: #61dafb;
+        color: white;
+        padding: 10px 15px;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease-in-out;
+    }
+
+        button:hover {
+            background-color: #00b2ff;
+        }
+
+        button:disabled {
+            background-color: #b0d7f6;
+            cursor: not-allowed;
+        }
+
+    /* Loading & Submission Status */
+    p {
+        font-size: 1em;
+        color: #333;
+    }
+
+    .submission-status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    .success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .submission-status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+</style>
+
+@if (!string.IsNullOrEmpty(submissionStatus))
+{
+    <p class="submission-status @(submissionStatus.Contains("successfully") ? "success" : "error")">
+        @submissionStatus
+    </p>
+}
+
+@code {
+    private BlogPost newBlogPost = new BlogPost();
+    private bool isSubmitting = false;
+    private string submissionStatus = string.Empty;
+    private string email;
+
+    // Model for creating a new blog post
+    public class BlogPost
+    {
+        public string Title { get; set; }
+        public string Summary { get; set; }
+        public string Content { get; set; }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        // Fetch authenticated user's details
+        var authState = await Auth.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+        }
+        else
+        {
+            email = null;
+        }
+    }
+    // Handler for form submission
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        submissionStatus = string.Empty;
+
+        try
+        {
+            // Retrieve the content from the TinyMCE editor
+            newBlogPost.Content = await JSRuntime.InvokeAsync<string>("tinymce.activeEditor.getContent");
+
+            var client = SupabaseService.GetClient();
+            Console.WriteLine("Hitting Registering the blog");
+            var result = await SupabaseService.RegisterBlog(newBlogPost.Title, newBlogPost.Summary, newBlogPost.Content,email);
+            if (result)
+            {
+                submissionStatus = "Your blog post has been successfully created!";
+            }
+            else
+            {
+                submissionStatus = "There was an error creating your blog post. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            submissionStatus = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += HandleLocationChanged;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initTinyMCE"); // Ensure TinyMCE initializes
+        }
+    }
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        JSRuntime.InvokeVoidAsync("tinymce.remove"); // Destroy TinyMCE when leaving
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+}

@@ -1,0 +1,86 @@
+﻿@page "/counter"
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient Http
+@using BlogApplication.Models
+@using BlogApplication.Services
+@attribute [CustomAuthorize("user")]
+<h3>Create a New Blog Post</h3>
+
+<EditForm Model="@newBlogPost" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="title">Title</label>
+        <InputText id="title" class="form-control" @bind-Value="newBlogPost.Title" />
+    </div>
+
+    <div class="form-group">
+        <label for="summary">Summary</label>
+        <InputText id="summary" class="form-control" @bind-Value="newBlogPost.Summary" />
+    </div>
+
+    <div class="form-group">
+        <label for="content">Content</label>
+        <InputTextArea id="content" class="form-control" @bind-Value="newBlogPost.Content" Rows="8" />
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Create Blog Post</button>
+    </div>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(submissionStatus))
+{
+    <p class="submission-status @(submissionStatus.Contains("successfully") ? "success" : "error")">
+        @submissionStatus
+    </p>
+}
+
+@code {
+    private BlogPost newBlogPost = new BlogPost();
+    private bool isSubmitting = false;
+    private string submissionStatus = string.Empty;
+
+    public class BlogPost
+    {
+        public string Title { get; set; }
+        public string Summary { get; set; }
+        public string Content { get; set; }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        submissionStatus = string.Empty;
+
+        try
+        {
+            var apiBaseUrl = "https://localhost:7204";
+            // Make an HTTP POST request to the API
+            var response = await Http.PostAsJsonAsync($"{apiBaseUrl}/api/Blog", newBlogPost);
+
+            if (response.IsSuccessStatusCode)
+            {
+                submissionStatus = "Your blog post has been successfully created!";
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                submissionStatus = $"Error: {response.StatusCode}, Message: {errorContent}";
+                Console.WriteLine($"API Error: {response.StatusCode}, Content: {errorContent}"); // Log the response content
+            }
+        }
+        catch (Exception ex)
+        {
+            submissionStatus = $"An error occurred: {ex.Message}";
+            Console.WriteLine($"Exception: {ex.Message}"); // Log the exception
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+
+}

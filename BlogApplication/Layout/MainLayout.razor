@@ -1,0 +1,257 @@
+﻿@inherits LayoutComponentBase
+
+<div class="layout">
+    <!-- Sidebar -->
+    <div class="@SidebarCssClass">
+        <nav class="sidebar-nav">
+            <div class="logo-section">
+                <a class="sidebar-brand" href="">List</a>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="counter">
+                    <span class="bi bi-plus-square-fill" aria-hidden="true"></span> Counter
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="signup">
+                    <span class="bi bi-list-nested" aria-hidden="true"></span> Signup
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-list-nested" aria-hidden="true"></span> Login
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="blog">
+                    <span class="bi bi-list-nested" aria-hidden="true"></span> Create a Blog 
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="display">
+                    <span class="bi bi-list-nested" aria-hidden="true"></span> Written Blog 
+                </NavLink>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="@MainClass">
+        <!-- Navbar -->
+        <div class="top-row navbar custom-navbar">
+            <div class="container-fluid d-flex align-items-center">
+                <!-- Image and Title -->
+                <img src="bloglogo.png" alt="My Blog Logo" class="header-logo" />
+                <a class="navbar-brand ms-2" href="">My Blog</a>
+                <!-- Sidebar Toggle (Hamburger Icon) -->
+                <button title="Navigation menu" class="navbar-toggler ms-auto" @onclick="ToggleSidebar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body Content -->
+        <div class="content px-4">
+            @Body
+        </div>
+    </main>
+
+</div>
+
+@code {
+    private bool isSidebarCollapsed = true;
+
+    private string SidebarCssClass => isSidebarCollapsed ? "sidebar" : "sidebar open";
+    private string MainClass => isSidebarCollapsed ? "collapsed" : ""; // Ensure it removes 'collapsed' class
+
+    private void ToggleSidebar()
+    {
+        isSidebarCollapsed = !isSidebarCollapsed;
+    }
+}
+
+<style>
+/* General Layout */
+.layout {
+    display: flex;
+    height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f4f4;
+    overflow: hidden;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background: linear-gradient(to bottom, #6c757d, #495057);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding-top: 1rem;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%); /* Initially hidden */
+    z-index: 1050;
+    transition: transform 0.3s ease-in-out;
+}
+
+.sidebar.open {
+    transform: translateX(0); /* Slide the sidebar in when open */
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 1rem;
+}
+
+.logo-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #61dafb;
+    text-decoration: none;
+    display: block;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-item {
+    margin: 1rem 0;
+    width: 100%;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+}
+
+.nav-link span {
+    margin-right: 10px;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+.nav-link.active {
+    background-color: #61dafb;
+    color: white;
+}
+
+/* Navbar */
+.custom-navbar {
+    background-color: #282c34;
+    color: white;
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    border-bottom: 2px solid orange;
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.navbar-brand {
+    color: #61dafb;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-decoration: none;
+}
+
+.navbar-toggler {
+    background-color: transparent;
+    border: none; /* Remove button border */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+}
+
+.navbar-toggler-icon {
+    width: 30px;
+    height: 4px;
+    background-color: orange;
+    border-radius: 2px;
+    margin: 4px 0;
+}
+
+/* Main Content */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    margin-left: 250px; /* Sidebar width when expanded */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+main.collapsed {
+    margin-left: 0;  /* No left margin when sidebar is collapsed */
+}
+
+.content {
+    flex: 1;
+    padding: 2rem;
+    margin-top: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1051;
+        transform: translateX(-100%);
+    }
+
+    main {
+        margin-left: 0;  /* No sidebar margin on mobile */
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .navbar-toggler {
+        background-color: orange;
+    }
+}
+</style>

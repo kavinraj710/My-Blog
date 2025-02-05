@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlogApplication</title>
+    <base href="/" />
+
+    <link href="BlogApplication.styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <script src="_content/Blazored.TextEditor/blazored-text-editor.js"></script>
+    <!-- Add TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/pu0v5hvph1vbo4uououivktmt04dih3j5d42ge84rf2yjob7/tinymce/5/tinymce.min.js"></script>
+    <script src="tinyHelper.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <!-- Update the favicon to use bloglogo.png from wwwroot -->
+    <link rel="icon" type="image/png" href="bloglogo.png" />
+    <script src="cookieHelper.js"></script>
+
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+<script>
+    window.CookieReader = {
+        Read: function (cookie_name) {
+            var name = cookie_name + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+    }
+</script>
+</html>

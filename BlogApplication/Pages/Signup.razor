@@ -1,0 +1,334 @@
+﻿@page "/signup"
+@inject SupabaseService SupabaseService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using BlogApplication.Models
+@using BlogApplication.Services
+
+@namespace BlogApplication
+
+<div class="signup-container">
+    <h3>Sign Up</h3>
+
+    <EditForm Model="userModel" OnValidSubmit="HandleSubmit" class="signup-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        @if (imagePreviewUrl != null)
+        {
+            <div class="image-preview">
+                <h4>Profile Image Preview</h4>
+                <div class="preview-container">
+                    <img src="@imagePreviewUrl" alt="Image Preview" class="img-preview" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="image-placeholder">
+                <div class="image-placeholder-text">
+                    <span>Upload Profile Image</span>
+                </div>
+            </div>
+        }
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <InputText id="name" @bind-Value="userModel.name" class="form-control" placeholder="Enter your name" />
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <InputText id="email" @bind-Value="userModel.email" class="form-control" placeholder="Enter your email" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <InputText id="password" @bind-Value="pass" type="password" class="form-control" placeholder="Enter your password" />
+        </div>
+
+        <div class="form-group">
+            <label for="profileImage">Profile Image:</label>
+            <InputFile id="profileImage" OnChange="HandleFileChange" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary submit-btn">Sign Up</button>
+    </EditForm>
+
+    <div class="login-link">
+        Already registered? <a href="/login">Log in here</a>.
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <p class="message error">@errorMessage</p>
+    }
+
+    @if (successMessage != null)
+    {
+        <p class="message success">@successMessage</p>
+    }
+</div>
+
+<style>
+    /* General Styling */
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+    }
+
+    h3 {
+        text-align: center;
+        font-size: 2.5em;
+        margin-top: 20px;
+        color: #444;
+    }
+
+    /* Form Container */
+    .signup-container {
+        max-width: 450px;
+        margin: 60px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Form Styling */
+    .signup-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #555;
+    }
+
+    input.form-control {
+        padding: 10px;
+        font-size: 1em;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+        input.form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+            outline: none;
+        }
+
+    /* Button Styling */
+    button.submit-btn {
+        padding: 12px;
+        font-size: 1.2em;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        button.submit-btn:hover {
+            background-color: #0056b3;
+        }
+
+    /* Messages */
+    .message {
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: bold;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+
+        .message.success {
+            color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .message.error {
+            color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+    /* Login Link */
+    .login-link {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 1em;
+        color: #555;
+    }
+
+        .login-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+            .login-link a:hover {
+                text-decoration: underline;
+            }
+
+    /* Image Preview Styling */
+    .image-preview {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .preview-container {
+        display: inline-flex; /* Use flex to center the image */
+        justify-content: center;
+        align-items: center;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid #ddd;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 10px;
+        transition: transform 0.3s ease-in-out;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .preview-container, .image-placeholder {
+        width: 200px; /* Increased from 150px */
+        height: 200px; /* Increased from 150px */
+    }
+
+    .img-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+
+    .image-placeholder {
+        display: inline-flex; /* Use flex to center the placeholder text */
+        justify-content: center;
+        align-items: center;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 3px solid #ddd;
+        background-color: #f0f0f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 10px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .image-placeholder-text {
+        font-size: 1em;
+        color: #aaa;
+        text-align: center;
+    }
+
+    /* Hover Effect */
+    .preview-container:hover {
+        transform: scale(1.05);
+    }
+
+    /* Responsive Design */
+    media (max-width: 480px) {
+        .signup-container
+
+    {
+        padding: 15px;
+        margin: 20px;
+    }
+
+    h3 {
+        font-size: 2em;
+    }
+
+    }
+</style>
+
+@code {
+    private User userModel = new User();
+    string pass;
+    private string? errorMessage;
+    private string? successMessage;
+    private IBrowserFile selectedImage;
+    private string? imagePreviewUrl;
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+
+    private async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        selectedImage = e.File;
+
+        if (selectedImage.Size > MaxFileSize)
+        {
+            errorMessage = "File is too large. Please upload a file smaller than 2MB.";
+            imagePreviewUrl = null;
+            return;
+        }
+
+        var imageBytes = await GetImageBytesAsync();
+        if (imageBytes != null)
+        {
+            imagePreviewUrl = $"data:{selectedImage.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+        }
+        else
+        {
+            imagePreviewUrl = null;
+        }
+    }
+
+
+    private async Task<byte[]> GetImageBytesAsync()
+    {
+        if (selectedImage == null) return null;
+
+        var fileBytes = new byte[selectedImage.Size];
+        await selectedImage.OpenReadStream().ReadAsync(fileBytes);
+        return fileBytes;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            var client = SupabaseService.GetClient();
+            Console.WriteLine("Hitting Register User");
+
+            // Sign up the user via Supabase Auth
+            var response = await client.Auth.SignUp(userModel.email, pass);
+            Console.WriteLine("Register User Response: " + response?.User);
+
+            // Get the image bytes if an image was selected
+            byte[]? imageBytes = await GetImageBytesAsync();
+
+            // Save user details to the database including the profile image
+            userModel.profile_image = imageBytes; // Set the profile image to the byte array
+            await client.From<User>().Insert(userModel);
+
+            successMessage = "User successfully signed up! Redirecting to login...";
+            errorMessage = null;
+
+            // Redirect to the login page after 3 seconds
+            await Task.Delay(3000);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Sign-Up Error: {ex.Message}";
+            successMessage = null;
+        }
+    }
+}

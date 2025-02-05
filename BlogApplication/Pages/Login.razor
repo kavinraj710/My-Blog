@@ -1,0 +1,264 @@
+﻿@page "/login"
+@inject SupabaseService SupabaseService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider Auth
+@using BlogApplication.Models
+@using BlogApplication.Services
+
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@using BCrypt.Net
+
+@using static Supabase.Postgrest.Constants
+@using Supabase.Interfaces
+@using Microsoft.IdentityModel.Tokens
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@using System.Text
+
+<AuthorizeView>
+    <Authorized>
+        @{
+            AutoNavigate();
+        }
+    </Authorized>
+</AuthorizeView>
+
+<div class="login-container">
+    <h3>Login</h3>
+
+    <EditForm Model="loginModel" OnValidSubmit="HandleLogin" class="login-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <InputText id="email" @bind-Value="loginModel.Email" class="form-control" placeholder="Enter your email" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <InputText id="password" @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="Enter your password" />
+        </div>
+
+        <button type="submit" class="btn btn-primary submit-btn">Login</button>
+    </EditForm>
+
+    <div class="signup-link">
+        Don’t have an account? <a href="/signup">Sign up here</a>.
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <p class="message error">@errorMessage</p>
+    }
+</div>
+
+<style>
+    /* General Styling */
+    body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    }
+
+    h3 {
+    text-align: center;
+    font-size: 2.5em;
+    margin-top: 20px;
+    color: #444;
+    }
+
+    /* Login Container */
+    .login-container {
+    max-width: 450px;
+    margin: 60px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Form Styling */
+    .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    }
+
+    .form-group {
+    display: flex;
+    flex-direction: column;
+    }
+
+    label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #555;
+    }
+
+    input.form-control {
+    padding: 10px;
+    font-size: 1em;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+    outline: none;
+    }
+
+    /* Button Styling */
+    button.submit-btn {
+    padding: 12px;
+    font-size: 1.2em;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    }
+
+    button.submit-btn:hover {
+    background-color: #0056b3;
+    }
+
+    /* Messages */
+    .message {
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+    }
+
+    .message.error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    }
+
+    /* Signup Link */
+    .signup-link {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 1em;
+    color: #555;
+    }
+
+    .signup-link a {
+    color: #007bff;
+    text-decoration: none;
+    }
+
+    .signup-link a:hover {
+    text-decoration: underline;
+    }
+
+    /* Responsive Design */
+    media (max-width: 480px) {
+    .login-container {
+    padding: 15px;
+    margin: 20px;
+    }
+
+    h3 {
+    font-size: 2em;
+    }
+    }
+</style>
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private string? errorMessage;
+
+    public async Task<string> ModifyTokenRole(string token, string role)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
+
+        var claims = jwtToken.Claims.ToList();
+        var newClaims = claims.Where(c => c.Type != "role").ToList(); // Remove the existing role claim
+        newClaims.Add(new Claim("role", role)); // Add the new role claim
+
+        var key = Encoding.UTF8.GetBytes("9IMZpp7HIGch/fnVPALNe/uf6QqiOgjzjRsiCXA6wXHcij9ZMyawpVbFbgGB688tnO239HrsbFh0t5aI2U7bAg==");
+        var signingKey = new SymmetricSecurityKey(key);
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+
+        var updatedToken = new JwtSecurityToken(
+            issuer: "https://ktxqkibjwpocicuonflp.supabase.co/auth/v1",
+            //audience: "authenticated",
+            claims: newClaims,
+            notBefore: jwtToken.ValidFrom,
+            expires: jwtToken.ValidTo,
+            signingCredentials: credentials
+        );
+        var newToken = handler.WriteToken(updatedToken);
+
+        Console.WriteLine("Updated Token Created: " + newToken);
+        return newToken;
+    }
+
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var client = SupabaseService.GetClient();
+            Console.WriteLine("Hitting LoginAsync");
+
+            var authResponse = await client.Auth.SignIn(loginModel.Email, loginModel.Password);
+
+            if (authResponse?.User != null)
+            {
+                var accessToken = authResponse.AccessToken;
+                var refreshToken = authResponse.RefreshToken;
+
+                await SupabaseService.SetCookie(accessToken, refreshToken);
+
+                var user = await SupabaseService.GetUserByEmail(loginModel.Email);
+
+                ((AuthenticationProvider)Auth).SetUser(user);
+                Console.WriteLine("Auth User : " + ((AuthenticationProvider)Auth).User);
+
+                // Navigate to the blog page after successful login
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "User is not registered or credentials are incorrect.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login Error: {ex.Message}";
+        }
+    }
+
+    public void AutoNavigate()
+    {
+        // if (string.IsNullOrEmpty(ReturnUrlPath))
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        // else
+        {
+            // NavTo(ReturnUrlPath);
+        }
+    }
+
+
+    public class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+}
